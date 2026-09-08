@@ -5111,6 +5111,16 @@ function renderProdutos(){
    extrato, some da receita, e o que for de outra pessoa vira dívida
    com nome e valor até você repassar.
    ================================================================== */
+const ROT_SECAO={
+  lanc:'lançamentos', produtos:'produtos', contasProprias:'contas próprias (seu nome e o da empresa)',
+  instituicoes:'instituições', cartoes:'meios de pagamento', planos:'dívidas',
+  fixas:'contas fixas', receber:'a receber', alvos:'metas com prazo', regras:'regras de categoria',
+  potes:'potes', identidade:'identidade e visão', metas:'metas de 12 meses',
+  eker:'programa de 90 dias', pilares:'pilares da vida', patrimonio:'patrimônio',
+  empresas:'empresas e custos', rv:'renda variável', impostos:'impostos',
+  mes:'mês em foco', receitaPlan:'receita planejada', pj:'estratégia da empresa',
+  pf:'lucro primeiro', plano:'alocação', guia:'progresso do guia',
+};
 const NAO_RECEITA=[
   ['repasse','Repasse — é de outra pessoa','Você recebeu por alguém e precisa passar adiante. Vira dívida sua até repassar.'],
   ['aporte','Sociedade ou aporte','Venda de participação, entrada de sócio, capital. Não é receita de serviço e não entra na base do imposto.'],
@@ -5408,13 +5418,27 @@ function ligar(){
       const ks=Object.keys(j);
       if(!ks.length){alert('Arquivo vazio.');return;}
       const completo=['lanc','potes','identidade','rv'].every(k=>k in j);
+      /* dizer "9 seções" não é dizer nada: o que importa é o que vai ser
+         trocado, quanto tinha antes e quanto passa a ter */
+      const linha=k=>{
+        const rot=ROT_SECAO[k]||k, novo=j[k], atual=S[k];
+        if(Array.isArray(novo)){
+          const de=Array.isArray(atual)?atual.length:0;
+          return '· '+rot+': '+de+' → '+novo.length
+            +(de>novo.length?'  ⚠ perde '+(de-novo.length):'');
+        }
+        return '· '+rot;
+      };
+      const mantidas=Object.keys(estadoInicial())
+        .filter(k=>ks.indexOf(k)<0&&['identidade','metas','potes','eker','alvos','regras','pilares','receber','patrimonio'].indexOf(k)>=0)
+        .map(k=>ROT_SECAO[k]||k);
       const ok=confirm(completo
-        ? 'Este arquivo parece um backup completo, com '+ks.length+' seções.\n\n'
-          +'SUBSTITUIR tudo o que está no painel agora?'
-        : 'Este arquivo traz '+ks.length+(ks.length===1?' seção: ':' seções: ')
-          +ks.slice(0,5).join(', ')+(ks.length>5?'…':'')+'.\n\n'
-          +(Array.isArray(j.lancAdd)?'Ele ACRESCENTA '+j.lancAdd.length+' lançamentos, pulando os que já existem. ':'')
-          +'Aplicar só essas e manter o resto do painel como está?');
+        ? 'BACKUP COMPLETO — substitui TUDO o que está no painel:\n\n'
+          +ks.map(linha).join('\n')+'\n\nContinuar?'
+        : 'Este arquivo troca:\n\n'+ks.map(linha).join('\n')
+          +(Array.isArray(j.lancAdd)?'\n· acrescenta '+j.lancAdd.length+' lançamentos (pula os repetidos)':'')
+          +(mantidas.length?'\n\nContinua como está: '+mantidas.join(', ')+'.':'')
+          +'\n\nAplicar?');
       if(!ok){ev.target.value='';return;}
       try{
         /* lancAdd acrescenta sem apagar: serve para trazer o que faltou de um
