@@ -1,0 +1,30 @@
+# ---- nada financeiro sobe para o repositório ----
+extratos/
+MEUS-DADOS-nao-publicar.json
+painel-PESSOAL-nao-publicar.html
+*.backup-*.html
+painel-marco-*.json
+
+# qualquer extrato ou planilha, em qualquer lugar da pasta
+*.csv
+*.ofx
+*.qfx
+*.xls
+*.xlsx
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.heic
+*.HEIC
+
+# json em geral fica de fora; só o manifest do app entra
+*.json
+!manifest.webmanifest
+
+# exceção para os ícones do app
+!icone-180.png
+!icone-192.png
+!icone-512.png
+
+.DS_Store
