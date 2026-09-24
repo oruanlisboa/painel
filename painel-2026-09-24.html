@@ -240,6 +240,7 @@ details.card>.corpo{padding:0 18px 18px}
 .chips button{background:var(--sup);border:1px solid var(--linha);border-radius:999px;padding:7px 13px;font-size:12.5px;
   font-weight:600;color:var(--areia2);white-space:nowrap;display:inline-flex;gap:7px;align-items:center}
 .chips button:hover{border-color:var(--aurora);color:var(--aurora)}
+.chips button.on{background:rgba(240,160,90,.14);border-color:var(--aurora);color:var(--aurora)}
 .chips button i{font-style:normal;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--fosco)}
 
 /* ---- listas compactas (vencimentos, fixas, a receber) ---- */
@@ -5068,8 +5069,12 @@ function produtoDeLanc(l){
   }
   return produtoDe(l.v);
 }
-function faturamentoProdutos(){
-  const vd=vendasPJ(), tot=vd.reduce((a,l)=>a+l.v,0);
+/* mês escolhido nas abas do faturamento por produto; vazio = todos os meses */
+let prodMes='';
+const vendasMes=m=>{m=m===undefined?prodMes:m; return vendasPJ().filter(l=>!m||l.d.slice(0,7)===m);};
+const mesCurto=m=>MESES_TXT[+m.slice(5,7)-1]+'/'+m.slice(2,4);
+function faturamentoProdutos(m){
+  const vd=vendasMes(m), tot=vd.reduce((a,l)=>a+l.v,0);
   const mapa=S.produtos.map(p=>({p,q:0,v:0,pagos:0,quem:new Set()}));
   let semQ=0, semV=0;
   vd.forEach(l=>{
@@ -5086,7 +5091,7 @@ function faturamentoProdutos(){
    é esta lista que transforma "não sei o que é isso" em três toques */
 function valoresSemProduto(){
   const g=Object.create(null);
-  vendasPJ().forEach(l=>{
+  vendasMes().forEach(l=>{
     if(produtoDeLanc(l))return;
     const k=CENT(l.v);
     const e=g[k]||(g[k]={v:l.v,q:0,tot:0,quem:[]});
@@ -5098,7 +5103,7 @@ function valoresSemProduto(){
 }
 function pagadoresSemProduto(){
   const g=Object.create(null);
-  vendasPJ().forEach(l=>{
+  vendasMes().forEach(l=>{
     if(produtoDeLanc(l))return;
     const n=quemPagou(l.n); if(norm(n).length<3)return;
     /* agrupa pelo mesmo par primeiro+último nome, senão o cliente aparece
@@ -5111,10 +5116,40 @@ function pagadoresSemProduto(){
   return Object.values(g).sort((a,b)=>b.tot-a.tot);
 }
 let sempModo='valor';
+/* uma aba por mês e a tabela mês a mês: o total esconde se um produto está
+   subindo ou morrendo */
+function htmlProdMeses(){
+  const meses=[...new Set(vendasPJ().map(l=>l.d.slice(0,7)))].sort();
+  if(!meses.length)return '';
+  if(prodMes&&meses.indexOf(prodMes)<0)prodMes='';
+  const porMes=meses.map(m=>faturamentoProdutos(m));
+  const cel=(v,q,forte)=>v?`<b style="color:${forte?'var(--areia)':'var(--areia2)'}">${brl0(v)}</b><br><span style="color:var(--fosco);font-size:10.5px">${q} ${q===1?'venda':'vendas'}</span>`:'<span style="color:var(--sup2)">—</span>';
+  const th=m=>`<th class="r" style="padding:6px 8px;${m===prodMes?'color:var(--aurora)':'color:var(--fosco)'}">${mesCurto(m)}</th>`;
+  const tdS='style="padding:7px 8px;border-top:1px solid var(--linha2);vertical-align:top"';
+  const linhas=S.produtos.map((p,i)=>{
+    const vals=porMes.map(F=>F.mapa.find(x=>x.p===p)||{v:0,q:0});
+    const tot=faturamentoProdutos('').mapa.find(x=>x.p===p)||{v:0,q:0};
+    return `<tr><td ${tdS}>${esc(p.nome)}</td>${vals.map((e,k)=>`<td class="r num" ${tdS}>${cel(e.v,e.q,meses[k]===prodMes)}</td>`).join('')}
+      <td class="r num" ${tdS}>${cel(tot.v,tot.q,!prodMes)}</td></tr>`;}).join('');
+  const semL=`<tr><td ${tdS}><span style="color:var(--aurora)">Sem produto</span></td>${porMes.map(F=>`<td class="r num" ${tdS}>${F.semV?`<span style="color:var(--aurora)">${brl0(F.semV)}</span><br><span style="color:var(--fosco);font-size:10.5px">${F.semQ} ${F.semQ===1?'pagamento':'pagamentos'}</span>`:'—'}</td>`).join('')}
+    <td class="r num" ${tdS}>${(()=>{const F=faturamentoProdutos('');return F.semV?`<span style="color:var(--aurora)">${brl0(F.semV)}</span>`:'—';})()}</td></tr>`;
+  const totL=`<tr><td ${tdS}><b>Total</b></td>${porMes.map(F=>`<td class="r num" ${tdS}><b>${brl0(F.tot)}</b><br><span style="color:var(--fosco);font-size:10.5px">${F.vendas} pagamentos</span></td>`).join('')}
+    <td class="r num" ${tdS}><b>${brl0(faturamentoProdutos('').tot)}</b></td></tr>`;
+  const ultimo=meses[meses.length-1], parcial=ultimo===HOJE.slice(0,7)||!S.lanc.some(l=>l.d>ultimo+'-27');
+  return `<div class="chips" style="margin:4px 0 10px">
+      <button class="${!prodMes?'on':''}" data-prodmes="">Todos os meses</button>
+      ${meses.map(m=>`<button class="${prodMes===m?'on':''}" data-prodmes="${m}">${mesCurto(m)} · ${brl0(porMes[meses.indexOf(m)].tot)}</button>`).join('')}
+    </div>
+    <div style="overflow-x:auto;margin-bottom:6px"><table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead><tr><th style="text-align:left;padding:6px 8px;color:var(--fosco);font-weight:600">Produto</th>${meses.map(th).join('')}<th class="r" style="padding:6px 8px">Total</th></tr></thead>
+      <tbody>${linhas}${semL}${totL}</tbody></table></div>
+    ${parcial?`<div class="nota" style="margin:0 0 14px">${mesCurto(ultimo)} ainda está incompleto: só tem lançamentos até ${(()=>{const d=vendasPJ().map(l=>l.d).sort().pop();return d.slice(8)+'/'+d.slice(5,7);})()}.</div>`:''}
+    <div class="eyebrow" style="margin-bottom:8px">${prodMes?'Produtos em '+mesCurto(prodMes):'Produtos — todos os meses'}</div>`;
+}
 function renderProdutos(){
   const el=$('#pj-prod'); if(!el)return;
   const F=faturamentoProdutos();
-  el.innerHTML=S.produtos.map((p,i)=>{
+  el.innerHTML=htmlProdMeses()+S.produtos.map((p,i)=>{
     const e=F.mapa.find(x=>x.p===p)||{q:0,v:0};
     const pct=F.tot?e.v/F.tot*100:0;
     return `<div class="prd">
@@ -5149,7 +5184,7 @@ function renderProdutos(){
       : '';
     return;}
   const pg=pagadoresSemProduto();
-  const um=vendasPJ().filter(l=>!produtoDeLanc(l)).sort((a,b)=>b.v-a.v);
+  const um=vendasMes().filter(l=>!produtoDeLanc(l)).sort((a,b)=>b.v-a.v);
   const opcoes=()=>`<option value="">— o que é isto? —</option>
     <optgroup label="Venda de produto">
       ${S.produtos.map((p,k)=>`<option value="${k}">${esc(p.nome)}</option>`).join('')}
@@ -5864,6 +5899,7 @@ function ligarPlano(){
     if(d.delcli){const[i,j]=d.delcli.split('-').map(Number);
       S.produtos[i].clientes.splice(j,1);salvar();renderProdutos();renderDRE();return;}
     if(d.sempmodo){sempModo=d.sempmodo;renderProdutos();return;}
+    if(d.prodmes!=null){prodMes=d.prodmes;renderProdutos();return;}
     if(d.nrl!=null){return;}
     if(d.repassei!=null){const x=aRepassar()[+d.repassei]; if(!x)return;
       if(!confirm('Marcar '+brl0(x.v)+' de '+x.nome+' como já repassado?'))return;
