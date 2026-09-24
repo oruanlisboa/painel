@@ -1,7 +1,7 @@
 {
   "name": "Painel de Vida",
   "short_name": "Painel",
-  "start_url": "./painel-ruan_3.html",
+  "start_url": "./painel-2026-09-24.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
@@ -30,7 +30,7 @@
     }
   ],
   "share_target": {
-    "action": "./painel-ruan_3.html",
+    "action": "./painel-2026-09-24.html",
     "method": "GET",
     "params": {
       "title": "title",
@@ -42,12 +42,12 @@
     {
       "name": "Lançar",
       "short_name": "Lançar",
-      "url": "./painel-ruan_3.html?ir=fluxo"
+      "url": "./painel-2026-09-24.html?ir=fluxo"
     },
     {
       "name": "Plano",
       "short_name": "Plano",
-      "url": "./painel-ruan_3.html?ir=planopf"
+      "url": "./painel-2026-09-24.html?ir=planopf"
     }
   ]
 }

@@ -31,7 +31,7 @@ categoriza por regras que você escreve, e mostra tudo antes de gravar.
 
 ## Como usar
 
-Abra `painel-ruan_3.html` no navegador. Só isso.
+Abra `painel-2026-09-24.html` no navegador. Só isso.
 
 Para instalar como aplicativo no celular, sirva a pasta por HTTP:
 

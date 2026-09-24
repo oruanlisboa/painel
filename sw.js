@@ -1,9 +1,10 @@
 /* Painel de Vida — service worker.
    Guarda o painel para ele abrir sem internet. Os dados nunca passam por aqui:
    ficam no armazenamento do navegador e no backup em arquivo. */
-const CACHE = 'painel-v14';
+const CACHE = 'painel-v16';
 const ARQUIVOS = [
   './',
+  './painel-2026-09-24.html',
   './painel-ruan_3.html',
   './manifest.webmanifest',
   './icone-180.png',
@@ -39,6 +40,6 @@ self.addEventListener('fetch', ev => {
         caches.open(CACHE).then(c => c.put(req, copia)).catch(() => {});
         return res;
       })
-      .catch(() => caches.match(req).then(r => r || caches.match('./painel-ruan_3.html')))
+      .catch(() => caches.match(req).then(r => r || caches.match('./painel-2026-09-24.html')))
   );
 });
