@@ -243,6 +243,27 @@ details.card>.corpo{padding:0 18px 18px}
 .chips button.on{background:rgba(240,160,90,.14);border-color:var(--aurora);color:var(--aurora)}
 .chips button i{font-style:normal;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--fosco)}
 
+
+/* ---- painel do dono ---- */
+.dnota{display:flex;align-items:center;gap:6px}
+.dnota b{font-family:"JetBrains Mono",monospace;font-size:34px}.dnota span{font-size:10.5px;color:var(--fosco);line-height:1.2}
+.dsem{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px}
+.dsc{border:1px solid var(--linha);border-left:4px solid var(--fosco);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;font-size:12.5px}
+.dsc b{font-size:13px}.dsc span{color:var(--areia2)}.dsc.ok{border-left-color:var(--salvia)}.dsc.aviso{border-left-color:var(--aurora)}.dsc.mau{border-left-color:var(--brasa)}
+.dbal{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.dbal div{display:flex;flex-direction:column}.dbal span{font-size:11px;color:var(--fosco)}
+.dbal b{font-family:"JetBrains Mono",monospace;font-size:22px}.dbal .op{font-size:22px;color:var(--fosco)}
+.dlp{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.dlp div{background:var(--sup);border:1px solid var(--linha);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:4px}
+.dlp span{font-size:11.5px;font-weight:600}.dlp b{font-family:"JetBrains Mono",monospace;font-size:17px}
+@media(max-width:560px){.dlp{grid-template-columns:1fr 1fr}.grid3{grid-template-columns:1fr 1fr}}
+.dprog{height:8px;border-radius:99px;background:var(--sup2);overflow:hidden;margin:6px 0}.dprog i{display:block;height:100%;border-radius:99px}
+.dh{border-top:1px solid var(--linha2);padding:10px 0}.dh summary{cursor:pointer;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dchk{list-style:none;padding:0;margin:6px 0 0}.dchk li{padding:5px 0;font-size:13px}.dchk label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.dchk input{margin-top:3px}.dmeta{margin-bottom:12px}.dmeta .lin{display:flex;justify-content:space-between;font-size:13px}.dmeta .f{font-size:11.5px;color:var(--fosco)}
+.dtab{width:100%;font-size:12.5px;border-collapse:collapse}.dtab th{font-size:10.5px;color:var(--fosco);text-transform:uppercase;letter-spacing:.05em;text-align:left;padding:6px}
+.dtab td{border-top:1px solid var(--linha2);padding:7px 6px;vertical-align:top}.dtab .r{text-align:right}
+.dlic{border:1px solid var(--linha);border-radius:12px;padding:12px 14px;margin-top:8px}.dlic.dest{border-color:var(--aurora);background:rgba(240,160,90,.06)}
+.dlic h3{margin:4px 0 6px;font-size:16px}.dlic p{margin:4px 0;font-size:13px;color:var(--areia2)}.dsm{font-size:12px!important}
+.dlics{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px}.dregras li{margin:6px 0;font-size:13px}
 /* ---- listas compactas (vencimentos, fixas, a receber) ---- */
 .compacta{list-style:none;margin:0;padding:0}
 .compacta li{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--linha2)}
@@ -707,7 +728,10 @@ tr.ehpj td:first-child{box-shadow:inset 2px 0 0 var(--pj)}
   </header>
 
   <!-- ================= HOJE ================= -->
-  <section class="aba on" id="aba-hoje">
+  <!-- ================= PAINEL DO DONO ================= -->
+  <section class="aba on" id="aba-painel"><div id="dash"></div></section>
+
+  <section class="aba" id="aba-hoje">
 
     <div id="aviso-backup"></div>
 
@@ -1417,7 +1441,8 @@ tr.ehpj td:first-child{box-shadow:inset 2px 0 0 var(--pj)}
 </div>
 
 <nav class="tabs">
-  <button class="on" data-t="hoje"><span class="i">◐</span>Hoje</button>
+  <button class="on" data-t="painel"><span class="i">◎</span>Painel</button>
+  <button data-t="hoje"><span class="i">◐</span>Hoje</button>
   <button data-t="dinheiro"><span class="i">◈</span>Dinheiro</button>
   <button data-t="eker"><span class="i">◇</span>90 dias</button>
   <button data-t="mais"><span class="i">▤</span>Mais</button>
@@ -1511,7 +1536,7 @@ const PILARES=[
 ];
 
 function estadoInicial(){return{
-  aba:'hoje', finAba:'visao', livro:'pf', simples:true, rodaModo:'sub',
+  aba:'painel', finAba:'visao', livro:'pf', simples:true, rodaModo:'sub',
   eker:{inicio:'',dias:{},ffaLog:[],declIdx:0},
   regras:[
     // comida e delivery
@@ -1893,6 +1918,7 @@ function migrar(){
   if(!S.contasProprias.length)S.contasProprias=I.contasProprias;
   if(!S.backup||typeof S.backup!=='object')S.backup=I.backup;
   if(!S.pj||typeof S.pj!=='object')S.pj=I.pj;
+  if(!S.estr||typeof S.estr!=='object')S.estr=ESTR0();
   if(!S.pj.algoritmo)S.pj.algoritmo={};
   if(!Array.isArray(S.pj.metas))S.pj.metas=[];
   if(S.pj.retem==null)S.pj.retem=50;
@@ -5485,9 +5511,311 @@ function renderDinheiro(){
   if(S.finAba==='pj'){renderPF();renderPJEstrategia();renderSocios();renderReceber();renderDRE();renderImpostos();renderPJ();renderNaoSeu();renderRV();}
   if(S.finAba==='config'){renderConfig();renderRegras();renderProprias();renderBackup();}
 }
-function tudo(){renderHoje();renderEker();renderMetas();renderPilares();renderDinheiro();renderSemana();renderProtocolo();renderModo();renderGuia();}
+/* ==================================================================
+   PAINEL DO DONO — a tela principal. Junta num lugar só o que decide
+   a vida financeira: a saúde do negócio, a conta que precisa fechar,
+   o dinheiro do dia, o plano com prazo e a escola do dono.
+   Cada número sai dos lançamentos; nada aqui é digitado à mão, exceto
+   o que só você sabe (MRR, reserva) e o que você marcou como feito.
+   ================================================================== */
+const ESTR0=()=>({inicio:HOJE,feito:{},licoes:{},mrr:0,ultDistrib:'',cortes:{}});
+const HORIZ=[
+ {id:'h0',rot:'Imediato',dias:7,itens:[
+  ['contas','Abrir as contas ou cofrinhos Lucro, Impostos e Operacional (a Receita fica na InfinitePay)'],
+  ['prolab','Confirmar o pró-labore fixo e o dia do pagamento'],
+  ['cartao','Tirar cartão e Pix da empresa do uso pessoal (Ifood, Uber, farmácia pela conta PF)'],
+  ['rotativo','Quitar o rotativo do cartão (a dívida mais cara)'],
+  ['kiwify','Baixar o relatório da Kiwify e da InfinitePay e classificar o que está sem produto'],
+  ['decidir','Zerar os "A DECIDIR" e os Pix de "Você e a empresa"'],
+  ['contador','Reunião com o contador: pró-labore formal, distribuição de lucros, DAS']]},
+ {id:'h1',rot:'30 dias',dias:30,itens:[
+  ['lanc-ma','Lançamento relâmpago da Masculinidade Autêntica para a lista de espera'],
+  ['ck-ment','Checkout da Mentoria individual + upsell logo após a compra da MA'],
+  ['pixel','Pixel com qualidade 7/10 ou mais e UTMs em todos os links'],
+  ['ck-destrava','Checkout de entrada de 2,4% para 8%: Pix com desconto, prova social, recuperação de carrinho'],
+  ['meta20','R$ 20 mil em vendas no mês']]},
+ {id:'h2',rot:'90 dias',dias:90,itens:[
+  ['turma','1ª turma em grupo (8 semanas, 15 a 20 alunos)'],
+  ['saas','ConquistAI oferecido em todo checkout (1 em cada 5 compradores assinando)'],
+  ['closer','Closer comissionado para o high ticket'],
+  ['conteudo','Conteúdo 5x por semana com CTA para o quiz'],
+  ['meta25','R$ 25 mil/mês em vendas e R$ 3 mil de MRR'],
+  ['reservapj','Reserva da empresa = 1 mês de custos'],
+  ['divida0','Dívida cara zerada'],
+  ['3pro','3 pró-labores seguidos, mesmo dia e mesmo valor']]},
+ {id:'h3',rot:'12 meses',dias:365,itens:[
+  ['trimestral','Lançamentos trimestrais da MA'],
+  ['time','Editor + social media'],
+  ['meta50','R$ 50 mil/mês e R$ 10 mil de MRR'],
+  ['reservapf','Reserva pessoal de 6 meses do NEC'],
+  ['reservapj3','Reserva da empresa de 3 meses'],
+  ['captar','6 meses de números limpos: pronto para conversar com investidor']]},
+ {id:'h4',rot:'2 a 5 anos',dias:1826,itens:[
+  ['semvoce','A empresa roda sem a sua hora no dia a dia (mentores certificados)'],
+  ['mrr40','Recorrência de 40% ou mais da receita'],
+  ['meta150','R$ 150 a 200 mil por mês'],
+  ['patrim','R$ 500 mil+ investidos'],
+  ['holding','Holding patrimonial, quando o patrimônio justificar']]},
+];
+const LICOES=[
+ ['Mike Michalowicz','Lucro Primeiro','Lucro sai antes da despesa. Cada real que entra é dividido nos dias 10 e 25 entre Lucro, Pró-labore, Impostos e Operacional.','O bloco "Dinheiro de hoje" já calcula quanto mandar para cada conta.','Faça a primeira distribuição e marque aqui.'],
+ ['T. Harv Eker','Os 6 potes','Os potes dividem a SUA renda (o pró-labore), não o faturamento. O pote da Liberdade nunca é gasto.','Dinheiro → Potes, com base no pró-labore.','Separe 10% do próximo pró-labore para a Liberdade no mesmo dia em que ele cair.'],
+ ['Alex Hormozi','Money Model','Oferta de entrada que paga o custo do cliente em 30 dias, depois upsell, downsell e recorrência.','Faturamento por produto mostra o que cada degrau vende.','Ligue um upsell depois da compra do seu produto principal.'],
+ ['Russell Brunson','Escada de valor','Cada produto leva naturalmente ao próximo. Um evento ou webinar é a máquina de vender o produto principal.','Seu último lançamento teve lead a R$ 2,03.','Marque a data do próximo lançamento.'],
+ ['Dan Kennedy','O número 1 é perigoso','Depender de um produto, um canal ou poucos clientes é o maior risco de um negócio pequeno.','O indicador "Dependência" aqui em cima.','Escreva qual é o seu "1" hoje e o plano para ter um "2".'],
+ ['Jim Collins','Flywheel','O volante gira por acúmulo: conteúdo → quiz → produto → comunidade → depoimento → conteúdo.','Metas com progresso, aqui embaixo.','Peça 3 depoimentos esta semana e transforme em conteúdo.'],
+ ['Warren Buffett','Margem de segurança','Nunca arriscar o que você precisa pelo que não precisa. Dívida cara é o oposto de margem.','Indicador "Dívida cara".','Liste as dívidas pela taxa de juros e ataque a primeira.'],
+ ['Ray Dalio','Princípios','Transforme cada erro em uma regra escrita. Dívida é gastar hoje a renda de amanhã.','As regras de ouro, no fim desta tela.','Escreva uma regra nova depois de qualquer erro de dinheiro desta semana.'],
+ ['Morgan Housel','Suficiente','Riqueza é o que você não gasta. Taxa de poupança pesa mais que retorno.','"Onde cortar" mostra o impacto de cada corte.','Defina por escrito o padrão de vida que é suficiente para você.'],
+ ['Naval Ravikant','Alavancagem','Código e mídia trabalham enquanto você dorme. Hora vendida não escala.','Indicador "Dependência da sua hora".','Uma ação desta semana que faça o ConquistAI vender sem você.'],
+ ['Nassim Taleb','Barbell','85–90% em segurança absoluta e 10–15% em apostas grandes. Nada morno no meio.','Reserva pessoal e reserva da empresa, nas Metas.','Coloque toda reserva em liquidez diária antes de qualquer aposta.'],
+ ['George S. Clason','Pague-se primeiro','"Uma parte de tudo o que ganhas é tua para guardares." No mínimo 10%.','Pote Liberdade (FFA).','Programe uma transferência automática de 10% no dia do pró-labore.'],
+ ['Verne Harnish','Ritmo semanal','Plano de uma página, metas trimestrais e 30 minutos por semana olhando os números.','Esta tela é a sua reunião de segunda-feira.','Agende 30 minutos toda segunda para passar por este painel.'],
+ ['Robert Kiyosaki','Ativo × passivo','Ativo põe dinheiro no seu bolso; passivo tira. A empresa precisa virar ativo que funciona sem você.','Plano de 2 a 5 anos.','Liste uma tarefa sua que outra pessoa poderia fazer por R$ 1.000/mês.'],
+];
+const CORTE_SUG={'Alimentação / Ifood':.5,'Loja':.65,'Compras Variadas':.5,'Transporte':.3,'Pequenos gastos não identificados':.5,'Supermercado':.1,'Farmácia':.2};
+const REGRAS_OURO=[
+ 'Gasto pessoal nunca sai de conta ou cartão da empresa. Se sair, vira adiantamento do próximo pró-labore.',
+ 'O pró-labore cai no mesmo dia e com o mesmo valor todo mês. Nada de Pix para mim no meio do mês.',
+ 'Lucro é distribuído por trimestre, e só se sobrou depois de impostos e da reserva da empresa.',
+ 'Nenhuma dívida para pagar custo de vida. Empréstimo só para investimento com retorno medido.',
+ '30 minutos toda segunda-feira neste painel: vendas, caixa e pendências.',
+ 'Marca, perfis e propriedade intelectual nunca entram em sociedade: no máximo, são licenciados.'];
+
+function estr(){ if(!S.estr||typeof S.estr!=='object')S.estr=ESTR0();
+  const e=S.estr; ['feito','licoes','cortes'].forEach(k=>{if(!e[k]||typeof e[k]!=='object')e[k]={};});
+  if(!e.inicio)e.inicio=HOJE; return e; }
+const diasDesde=d=>Math.floor((new Date(HOJE+'T00:00:00')-new Date(d+'T00:00:00'))/864e5);
+const somaDias=(d,n)=>{const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return x.toISOString().slice(0,10);};
+const dataCurta=d=>d.slice(8)+'/'+d.slice(5,7)+'/'+d.slice(2,4);
+
+function dashNumeros(){
+  const fech=mesesFechados().filter(m=>S.lanc.some(l=>l.d.slice(0,7)===m)).slice(-3);
+  const nec=pote('nec');
+  const gasto=l=>!RECEITA_CATS.includes(l.c)&&!IGNORAR_CATS.includes(l.c);
+  const porMes=fech.map(m=>{
+    const L=doMes(m), vendas=receitaPJ(m);
+    const custos=L.filter(l=>gasto(l)&&donoDe(l)==='pj'&&l.c!=='Quitação de dívidas').reduce((a,l)=>a+l.v,0);
+    const pessoalNaPJ=L.filter(l=>gasto(l)&&donoDe(l)==='pf'&&instDono(l.i)==='pj').reduce((a,l)=>a+l.v,0);
+    const pix=L.filter(l=>IGNORAR_CATS.includes(l.c)&&l.dir===-1&&instDono(l.i)==='pj'
+      &&(donoProprio(l.n)==='pf'||/picpay/i.test(l.n))).reduce((a,l)=>a+l.v,0);
+    const caucao=nec?realSub(nec,'Caução / mudança',m):0;
+    const vida=despesaReal(m)-caucao;
+    const ganhoPessoal=L.filter(l=>l.nr==='aporte'&&RECEITA_CATS.includes(l.c)).reduce((a,l)=>a+l.v,0);
+    return {m,vendas,custos,lucro:vendas-custos,pessoalNaPJ,pix,tirou:pessoalNaPJ+pix,vida,ganhoPessoal};
+  });
+  const med=k=>porMes.length?porMes.reduce((a,x)=>a+x[k],0)/porMes.length:0;
+  const vendasFech=vendasPJ().filter(l=>fech.includes(l.d.slice(0,7))).map(l=>l.v).sort((a,b)=>b-a);
+  const totV=vendasFech.reduce((a,v)=>a+v,0), top10=vendasFech.slice(0,10).reduce((a,v)=>a+v,0);
+  let ment=0; fech.forEach(m=>{const F=faturamentoProdutos(m);F.mapa.forEach(e=>{if(/mentoria individual/i.test(e.p.nome))ment+=e.v;});});
+  const semProd=fech.reduce((a,m)=>a+faturamentoProdutos(m).semV,0);
+  const piorLucro=porMes.length?Math.min(...porMes.map(x=>x.lucro)):0;
+  const proSug=Math.max(0,Math.floor(Math.min(med('vendas')*(+S.pf.pro||50)/100, piorLucro>0?piorLucro:Infinity)/100)*100);
+  const dividas=(S.planos||[]).map(p=>({nome:p.nome,resta:Math.max((+p.total||0)-(+p.pago||0),0)})).filter(p=>p.resta>0);
+  return {fech,porMes,med,top10:totV?top10/totV:0,ment:totV?ment/totV:0,semProd,proSug,dividas,
+    decidir:S.lanc.filter(l=>l.s==='A DECIDIR').length, socios:candidatosSocios()};
+}
+
+function barra(p,cor){p=Math.max(0,Math.min(1,p||0));
+  return `<div class="dprog"><i style="width:${(p*100).toFixed(1)}%;background:${cor||'var(--aurora)'}"></i></div>`;}
+
+function renderPainel(){
+  const el=$('#dash'); if(!el)return; ligarPainel();
+  const E=estr(), N=dashNumeros(), med=N.med;
+  const pro=+S.rv.proLabore||0, proOk=!!S.rv.proConfirmado&&pro>0;
+  const vidaMed=med('vida'), lucroMed=med('lucro'), tirouMed=med('tirou');
+  const proBase=proOk?pro:N.proSug, gap=vidaMed-proBase;
+  const rotMeses=N.fech.map(mesLabel).join(', ')||'—';
+
+  /* ---- semáforo ---- */
+  const sem=[];
+  /* dinheiro seu que passou pela conta da empresa (ex.: sócios da agência) também cobre retirada */
+  const ganhoMed=med('ganhoPessoal'), cobre=lucroMed+ganhoMed;
+  sem.push(tirouMed<=cobre
+    ?['ok','Retiradas × lucro',`Você tirou ${brl0(tirouMed)}/mês; lucro ${brl0(lucroMed)}${ganhoMed?' + ganho pessoal '+brl0(ganhoMed):''}.`]
+    :['mau','Retiradas × lucro',`Você tira ${brl0(tirouMed)}/mês e a empresa lucra ${brl0(lucroMed)}${ganhoMed?' (+ '+brl0(ganhoMed)+' de ganho pessoal fora da Ruan Enjoy)':''}. Faltam ${brl0(tirouMed-cobre)} todo mês.`]);
+  const pnpj=N.porMes.length?N.porMes[N.porMes.length-1].pessoalNaPJ:0;
+  sem.push(pnpj<1?['ok','Gasto pessoal na PJ','Zero no último mês fechado.']
+    :['mau','Gasto pessoal na PJ',`${brl0(pnpj)} no último mês fechado. Meta: zero.`]);
+  sem.push(proOk?['ok','Pró-labore',`${brl0(pro)} fixo, confirmado.`]
+    :['aviso','Pró-labore',`Não definido. O sustentável hoje é ${brl0(N.proSug)}.`]);
+  const dv=N.dividas.reduce((a,x)=>a+x.resta,0);
+  sem.push(dv<1?['ok','Dívida cara','Nenhuma em aberto.']:['mau','Dívida cara',`${brl0(dv)} em aberto: ${N.dividas.map(x=>esc(x.nome)).join(', ')}.`]);
+  const custMed=med('custos'), res=+S.rv.reservatorio||0;
+  sem.push(res>=custMed&&custMed>0?['ok','Reserva da empresa',`${brl0(res)}: cobre ${(res/custMed).toFixed(1)} mês de custos.`]
+    :['aviso','Reserva da empresa',`${brl0(res)} guardados. Meta de 90 dias: ${brl0(custMed)} (1 mês de custos).`]);
+  sem.push(N.top10<0.5&&N.ment<0.4?['ok','Dependência',`Top 10 pagamentos: ${Math.round(N.top10*100)}% das vendas.`]
+    :['aviso','Dependência da sua hora',`${Math.round(N.ment*100)}% das vendas vêm da mentoria individual; os 10 maiores pagamentos são ${Math.round(N.top10*100)}%.`]);
+  const pend=N.decidir+N.socios;
+  sem.push(pend===0&&N.semProd<1?['ok','Dados','Tudo classificado.']
+    :['aviso','Dados',`${N.decidir} "A DECIDIR", ${N.socios} Pix sem motivo, ${brl0(N.semProd)} em vendas sem produto.`]);
+  const nota=Math.round(sem.reduce((a,s)=>a+(s[0]==='ok'?1:s[0]==='aviso'?.5:0),0)/sem.length*100);
+
+  /* ---- Lucro Primeiro: dinheiro de hoje ---- */
+  const desde=E.ultDistrib||(mesAtual+'-01');
+  const entrou=vendasPJ().filter(l=>E.ultDistrib?l.d>E.ultDistrib:l.d>=desde).reduce((a,l)=>a+l.v,0);
+  const PCT=[['Lucro',+S.pf.lucro||5,'var(--salvia)'],['Pró-labore',+S.pf.pro||50,'var(--aurora)'],['Impostos',+S.pf.imp||15,'var(--brasa)'],['Operacional',+S.pf.ope||30,'var(--agua)']];
+  const dia=+HOJE.slice(8);
+  const prox=dia<10?mesAtual+'-10':dia<25?mesAtual+'-25':somaDias(mesAtual+'-01',40).slice(0,7)+'-10';
+
+  /* ---- onde cortar ---- */
+  const nec=pote('nec');
+  const cortes=nec?nec.subs.map(s=>{
+    const m3=N.fech.length?N.fech.reduce((a,m)=>a+realSub(nec,s.nome,m),0)/N.fech.length:0;
+    if(m3<1||/^PJ|Caução|A DECIDIR/.test(s.nome))return null;
+    /* o que não tem corte sugerido é gasto fixo: a meta é o orçado, não a média */
+    const sug=CORTE_SUG[s.nome]!=null?Math.round(m3*(1-CORTE_SUG[s.nome])/10)*10:(+s.plan||Math.round(m3/10)*10);
+    const meta=E.cortes[s.nome]!=null?+E.cortes[s.nome]:sug;
+    const quem=Object.create(null);
+    N.fech.forEach(m=>doMesPF(m).filter(l=>(l.c===nec.nome||l.c===curto(nec))&&l.s===s.nome)
+      .forEach(l=>{const k=String(l.n).replace(/^Pix\s+/i,'').replace(/\s+—.*$/,'').slice(0,28);quem[k]=(quem[k]||0)+l.v;}));
+    const top=Object.entries(quem).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    return {nome:s.nome,m3,meta,plan:+s.plan||0,top};
+  }).filter(Boolean).sort((a,b)=>b.m3-a.m3):[];
+  const economia=cortes.reduce((a,c)=>a+Math.max(c.m3-c.meta,0),0);
+
+  /* ---- plano ---- */
+  const planoHtml=HORIZ.map(h=>{
+    const feitos=h.itens.filter(([k])=>E.feito[k]).length, prazo=somaDias(E.inicio,h.dias);
+    const atras=HOJE>prazo&&feitos<h.itens.length;
+    return `<details class="dh" ${h.id==='h0'||(!atras&&feitos<h.itens.length&&h.id==='h1')?'open':''}>
+      <summary><b>${h.rot}</b> <span class="tag ${feitos===h.itens.length?'ok':atras?'mau':'alvo'}">${feitos}/${h.itens.length}</span>
+        <span style="color:var(--fosco);font-size:12px">até ${dataCurta(prazo)}${atras?' · atrasado':''}</span></summary>
+      ${barra(feitos/h.itens.length,feitos===h.itens.length?'var(--salvia)':'var(--aurora)')}
+      <ul class="dchk">${h.itens.map(([k,t])=>`<li><label><input type="checkbox" data-dfeito="${k}" ${E.feito[k]?'checked':''}> <span>${esc(t)}</span></label></li>`).join('')}</ul>
+    </details>`;}).join('');
+
+  /* ---- metas ---- */
+  const vm=receitaPJ(mesAtual), ultV=N.porMes.length?N.porMes[N.porMes.length-1].vendas:0;
+  const dd=diasDesde(E.inicio), metaV=dd<30?20000:dd<90?25000:dd<365?50000:150000;
+  const metaMrr=dd<90?3000:10000;
+  const resPF=acumuladoPote('emg'), metaPF=6*(nec?orcPote(nec):0);
+  const metas=[
+    ['Vendas do mês ('+mesLabel(mesAtual)+')',vm,metaV,`último mês fechado: ${brl0(ultV)}`],
+    ['Recorrência (MRR)',+E.mrr||0,metaMrr,'<input class="mini n" style="width:110px;display:inline-block" data-dmrr value="'+(+E.mrr||0)+'"> ConquistAI + CAMPO por mês'],
+    ['Reserva da empresa',res,Math.max(custMed,1),'meta de 90 dias: 1 mês de custos'],
+    ['Reserva pessoal (pote Emergência)',resPF,Math.max(metaPF,1),'meta: 6 meses do NEC'],
+    ['Dívida cara quitada',dv<1?1:0,1,dv<1?'sem dívida cara':`faltam ${brl0(dv)}`]];
+
+  /* ---- captação ---- */
+  const mesesDados=new Set(S.lanc.map(l=>l.d.slice(0,7))).size;
+  const prontos=[
+    ['Contas separadas (Lucro Primeiro)',!!E.feito.contas],['Pró-labore confirmado',proOk],
+    ['Zero gasto pessoal na PJ no último mês',pnpj<1],['Menos de 5 "A DECIDIR"',N.decidir<5],
+    ['Vendas da Kiwify consolidadas',!!E.feito.kiwify],['6 meses de dados',mesesDados>=6],
+    ['Reserva da empresa ≥ 1 mês',res>=custMed&&custMed>0],['Dívida cara zerada',dv<1]];
+  const pctPronto=prontos.filter(x=>x[1]).length/prontos.length;
+
+  /* ---- escola: lição da semana ---- */
+  const sem0=Math.floor(dd/7)%LICOES.length, L=LICOES[sem0];
+  const licaoHtml=(l,i,dest)=>`<div class="dlic ${dest?'dest':''}"><div class="eyebrow">${dest?'Lição da semana · ':''}${esc(l[0])}</div>
+    <h3>${esc(l[1])}</h3><p>${esc(l[2])}</p><p class="dsm"><b>No seu painel:</b> ${esc(l[3])}</p>
+    <p class="dsm"><b>Ação da semana:</b> ${esc(l[4])}</p>
+    <label class="dsm"><input type="checkbox" data-dlic="${i}" ${E.licoes[i]?'checked':''}> aplicada</label></div>`;
+
+  /* ---- portfólio foco ---- */
+  const fatP=Object.create(null);
+  N.fech.forEach(m=>faturamentoProdutos(m).mapa.forEach(e=>{fatP[e.p.nome]=(fatP[e.p.nome]||0)+e.v;}));
+  const ESC=[['Entrada','DESTRAVA e ebooks',/ebook|destrava/i],['Principal','Masculinidade Autêntica 2.0',/masculinidade/i],
+    ['Grupo','Turma / mentoria em grupo',/grupo|turma/i],['High ticket','Mentoria individual',/mentoria individual/i],['Recorrência','ConquistAI / CAMPO',/conquist|campo|vip/i]];
+  const totP=Object.values(fatP).reduce((a,v)=>a+v,0)||1;
+
+  el.innerHTML=`
+  <div class="card dhero">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div class="eyebrow">Painel do dono · ${esc(rotMeses)}</div>
+    <div class="dnota"><b style="color:${nota>=75?'var(--salvia)':nota>=50?'var(--aurora)':'var(--brasa)'}">${nota}</b><span>/100<br>saúde financeira</span></div></div>
+    <div class="grid3" style="margin-top:12px">
+      <div class="kpi"><div class="l">Vendas · média</div><div class="v">${brl0(med('vendas'))}</div><div class="f">empresa, por mês</div></div>
+      <div class="kpi"><div class="l">Lucro · média</div><div class="v">${brl0(lucroMed)}</div><div class="f">vendas − custos da empresa</div></div>
+      <div class="kpi"><div class="l">Você tirou · média</div><div class="v" style="color:${tirouMed>lucroMed+med('ganhoPessoal')?'var(--brasa)':'var(--salvia)'}">${brl0(tirouMed)}</div><div class="f">Pix + gastos pessoais na PJ</div></div>
+      <div class="kpi"><div class="l">Seu custo de vida</div><div class="v">${brl0(vidaMed)}</div><div class="f">média, sem a caução</div></div>
+      <div class="kpi"><div class="l">Pró-labore ${proOk?'fixo':'sustentável'}</div><div class="v">${brl0(proBase)}</div><div class="f">${proOk?'confirmado':'50% das vendas, limitado ao pior mês'}</div></div>
+      <div class="kpi"><div class="l">Ganho pessoal fora da Ruan Enjoy</div><div class="v">${brl0(N.porMes.reduce((a,x)=>a+x.ganhoPessoal,0))}</div><div class="f">entradas de sócios (Nesher Agência) no período</div></div>
+    </div>
+  </div>
+
+  <div class="card"><h2>Saúde do negócio</h2><p class="sub">Verde está certo, laranja pede atenção, vermelho pede ação esta semana.</p>
+    <div class="dsem">${sem.map(([t,h,x])=>`<div class="dsc ${t}"><b>${h}</b><span>${x}</span></div>`).join('')}</div></div>
+
+  <div class="card"><h2>A conta que precisa fechar</h2>
+    <p class="sub">Seu custo de vida contra o que a empresa aguenta pagar de pró-labore.</p>
+    <div class="dbal"><div><span>Custo de vida</span><b>${brl0(vidaMed)}</b></div><div class="op">−</div>
+      <div><span>Pró-labore ${proOk?'':'sustentável'}</span><b>${brl0(proBase)}</b></div><div class="op">=</div>
+      <div><span>${gap>0?'Falta':'Sobra'}</span><b style="color:${gap>0?'var(--brasa)':'var(--salvia)'}">${brl0(Math.abs(gap))}</b></div></div>
+    ${gap>0?`<div class="alerta aviso" style="margin-top:12px">Três caminhos: cortar ${brl0(gap)} (as metas de "Onde cortar" abaixo economizam ${brl0(economia)}), vender cerca de ${brl0(vidaMed/((+S.pf.pro||50)/100))} por mês para o pró-labore pagar a vida, ou os dois. O recomendado é os dois.</div>`:'<div class="alerta ok" style="margin-top:12px">O pró-labore paga a sua vida. Agora o excedente vai para reserva e Liberdade.</div>'}
+    ${proOk?'':`<div class="inline" style="margin-top:10px"><button class="btn sm p" data-dpro="${N.proSug}">Confirmar pró-labore de ${brl0(N.proSug)}</button>
+      <span style="font-size:12px;color:var(--fosco)">Você pode mudar depois em Dinheiro → Empresa → Renda variável.</span></div>`}
+  </div>
+
+  <div class="card"><h2>Dinheiro de hoje · Lucro Primeiro</h2>
+    <p class="sub">Vendas desde ${E.ultDistrib?'a última distribuição ('+dataCurta(E.ultDistrib)+')':'o dia 1º'}: <b>${brl0(entrou)}</b>. Próxima distribuição: <b>${dataCurta(prox)}</b>.</p>
+    <div class="dlp">${PCT.map(([n,p,c])=>`<div><span style="color:${c}">${n} · ${p}%</span><b>${brl0(entrou*p/100)}</b></div>`).join('')}</div>
+    <div class="inline" style="margin-top:10px"><button class="btn sm g" data-ddist>Fiz a distribuição hoje</button></div>
+    <div class="nota">O pró-labore acumulado aqui paga o seu valor fixo no dia 5. O que passar dele fica na conta de Pró-labore como colchão para os meses fracos (renda variável).</div></div>
+
+  <div class="card"><h2>Onde cortar</h2>
+    <p class="sub">Média real de ${esc(rotMeses)} por subcategoria, os maiores gastos de cada uma e uma meta sugerida. Mude a meta como quiser.</p>
+    <div class="rolar"><table class="dtab"><thead><tr><th>Subcategoria</th><th class="r">Média/mês</th><th class="r">Meta</th><th class="r">Economia</th><th>Onde foi</th></tr></thead><tbody>
+    ${cortes.map(c=>`<tr><td>${esc(c.nome)}</td><td class="r num">${brl0(c.m3)}</td>
+      <td class="r"><input class="mini n" style="width:90px" data-dcorte="${esc(c.nome)}" value="${c.meta}"></td>
+      <td class="r num" style="color:${c.m3-c.meta>0?'var(--salvia)':'var(--fosco)'}">${c.m3-c.meta>0?brl0(c.m3-c.meta):'—'}</td>
+      <td style="font-size:11.5px;color:var(--fosco)">${c.top.map(([n,v])=>esc(n)+' '+brl0(v/Math.max(N.fech.length,1))).join(' · ')}</td></tr>`).join('')}
+    <tr><td><b>Total</b></td><td class="r num"><b>${brl0(cortes.reduce((a,c)=>a+c.m3,0))}</b></td><td class="r num"><b>${brl0(cortes.reduce((a,c)=>a+c.meta,0))}</b></td>
+      <td class="r num"><b style="color:var(--salvia)">${brl0(economia)}</b></td><td></td></tr></tbody></table></div>
+    <div class="inline" style="margin-top:10px"><button class="btn sm p" data-dorcar>Usar as metas como orçado do NEC</button></div></div>
+
+  <div class="card"><h2>Plano de ação</h2><p class="sub">Começou em ${dataCurta(E.inicio)}. Marque o que for fazendo; o prazo de cada fase conta a partir daí.</p>${planoHtml}</div>
+
+  <div class="card"><h2>Metas</h2>
+    ${metas.map(([t,v,m,f])=>`<div class="dmeta"><div class="lin"><span>${t}</span><b class="num">${t.startsWith('Dívida')?(v?'feito':'em aberto'):brl0(v)+' de '+brl0(m)}</b></div>
+      ${barra(v/m,v>=m?'var(--salvia)':'var(--aurora)')}<div class="f">${f}</div></div>`).join('')}</div>
+
+  <div class="card"><h2>Portfólio: a escada que importa</h2><p class="sub">Vendas de ${esc(rotMeses)} por degrau, pelos extratos bancários. Vendas que ficam no saldo da Kiwify (DESTRAVA, MA, ConquistAI) só aparecem quando você sacar ou consolidar. Os demais produtos entram como bônus.</p>
+    <ul class="linhas">${ESC.map(([d,n,re])=>{const v=Object.entries(fatP).filter(([k])=>re.test(k)).reduce((a,[,x])=>a+x,0);
+      return `<li><span class="k"><span class="tag">${d}</span> ${esc(n)}</span><b class="num">${v?brl0(v)+' · '+Math.round(v/totP*100)+'%':'—'}</b></li>`;}).join('')}</ul></div>
+
+  <div class="card"><h2>Escola do dono</h2><p class="sub">Uma lição por semana dos maiores estrategistas, ligada ao seu painel.</p>
+    ${licaoHtml(L,sem0,true)}
+    <details style="margin-top:12px"><summary style="cursor:pointer;color:var(--fosco);font-size:13px">Todas as ${LICOES.length} lições (${Object.values(E.licoes).filter(Boolean).length} aplicadas)</summary>
+      <div class="dlics">${LICOES.map((l,i)=>licaoHtml(l,i,false)).join('')}</div></details></div>
+
+  <div class="card"><h2>Pronto para investidor?</h2><p class="sub">Investidor e sócio pedem números limpos. Quanto mais verde aqui, melhor a negociação.</p>
+    ${barra(pctPronto,pctPronto>=1?'var(--salvia)':'var(--aurora)')}
+    <ul class="dchk">${prontos.map(([t,ok])=>`<li><span class="tag ${ok?'ok':'mau'}">${ok?'ok':'falta'}</span> ${t}</li>`).join('')}</ul>
+    <details style="margin-top:8px"><summary style="cursor:pointer;color:var(--fosco);font-size:13px">Formas de captar e quando usar cada uma</summary>
+    <ul class="linhas">
+      <li><span class="k">Lucro Primeiro (caixa próprio)</span><span>agora</span></li>
+      <li><span class="k">Pré-venda / turma fundadora</span><span>30–90 dias</span></li>
+      <li><span class="k">Coprodução de um produto</span><span>para escalar a MA ou a turma</span></li>
+      <li><span class="k">Sócio operador com vesting (5–15%)</span><span>após 6 meses de números</span></li>
+      <li><span class="k">Investidor-anjo (LC 155/2016)</span><span>após 6 meses de pró-labore e contas separadas</span></li>
+      <li><span class="k">Empresa separada para o ConquistAI</span><span>MRR acima de R$ 10 mil</span></li>
+      <li><span class="k">Mútuo conversível</span><span>SaaS com tração</span></li>
+      <li><span class="k">Crédito barato no lugar do empréstimo da maquininha</span><span>para trocar dívida cara</span></li>
+      <li><span class="k">Agência por performance (fee + % do incremental)</span><span>nunca 30% de equity por serviço</span></li></ul></details></div>
+
+  <div class="card"><h2>Regras de ouro</h2><ol class="dregras">${REGRAS_OURO.map(r=>`<li>${esc(r)}</li>`).join('')}</ol></div>`;
+}
+function ligarPainel(){
+  const el=$('#dash'); if(!el||el.dataset.ok)return; el.dataset.ok='1';
+  el.addEventListener('change',e=>{const t=e.target, d=t.dataset, E=estr();
+    if(d.dfeito){E.feito[d.dfeito]=t.checked;salvar();renderPainel();return;}
+    if(d.dlic!=null){E.licoes[d.dlic]=t.checked;salvar();renderPainel();return;}
+    if(d.dcorte!=null){E.cortes[d.dcorte]=Math.max(0,+t.value||0);salvar();renderPainel();return;}
+    if('dmrr' in d){E.mrr=Math.max(0,+t.value||0);salvar();renderPainel();return;}
+  });
+  el.addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return; const d=b.dataset, E=estr();
+    if(d.dpro!=null){S.rv.proLabore=+d.dpro;S.rv.proConfirmado=true;E.feito.prolab=true;salvar();renderPainel();aviso('pró-labore confirmado');return;}
+    if('ddist' in d){E.ultDistrib=HOJE;salvar();renderPainel();aviso('distribuição registrada');return;}
+    if('dorcar' in d){const nec=pote('nec'); if(!nec)return; let q=0;
+      $$('[data-dcorte]').forEach(i=>{const s=nec.subs.find(x=>x.nome===i.dataset.dcorte); if(s){s.plan=+i.value||0;q++;}});
+      salvar();renderPainel();aviso(q+' metas viraram orçado do NEC');return;}
+  });
+}
+
+function tudo(){renderPainel();renderHoje();renderEker();renderMetas();renderPilares();renderDinheiro();renderSemana();renderProtocolo();renderModo();renderGuia();}
 function irPara(t){
-  if(!$('#aba-'+t))t='hoje';
+  if(!$('#aba-'+t))t='painel';
   S.aba=t;
   $$('.aba').forEach(a=>a.classList.remove('on'));
   $('#aba-'+t).classList.add('on');
@@ -5498,6 +5826,7 @@ function irPara(t){
   if(t==='pilares')renderPilares();
   if(t==='eker')renderEker();
   if(t==='hoje')renderHoje();
+  if(t==='painel')renderPainel();
   if(t==='guia')renderGuia();
   window.scrollTo(0,0);salvar();
 }
