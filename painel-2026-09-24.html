@@ -1717,8 +1717,9 @@ const receitaReal=m=>
   + movimentosSocios().filter(l=>l.d.slice(0,7)===m&&['prolabore','lucros','reembolso'].includes(l.t))
       .reduce((a,l)=>a+l.v,0);
 /* faturamento da empresa: o que entrou nas contas dela */
-const receitaPJ=m=>doMes(m).filter(l=>RECEITA_CATS.includes(l.c)&&instDono(l.i)==='pj')
-  .reduce((a,l)=>a+l.v,0);
+/* só o que é venda: repasse de terceiro, estorno, reembolso, rendimento e crédito
+   de cartão ficam de fora — a mesma régua do faturamento por produto */
+const receitaPJ=m=>doMes(m).filter(l=>vendaValida(l)).reduce((a,l)=>a+l.v,0);
 const receitaBase=()=>S.base==='pro'?(S.rv.proLabore||S.receitaPlan):S.base==='real'?(receitaReal(S.mes)||S.receitaPlan):S.receitaPlan;
 const alocado=p=>receitaBase()*(+p.pct||0)/100;
 const realPote=(p,m)=>doMesPF(m||S.mes).filter(l=>l.c===p.nome||l.c===curto(p)).reduce((a,l)=>a+l.v,0);
@@ -5044,8 +5045,12 @@ const mesesFechados=()=>meses().filter(m=>m<mesAtual);
 function entradasPJ(){
   return S.lanc.filter(l=>RECEITA_CATS.indexOf(l.c)>=0&&instDono(l.i)==='pj'&&!ehCartao(l.i));
 }
-/* adiantamento de maquininha não é cliente: é o seu próprio dinheiro voltando */
+/* depósito de maquininha não tem nome de cliente: não entra na lista de clientes */
 var ADIANTAMENTO=/receba na hora|antecipa|deposito|depósito|saldo|resgate|transfer/i;
+/* mas é venda: o "Receba na hora" / "Depósito de vendas" da InfinitePay é o cartão do
+   cliente caindo na conta, já sem a taxa — e não aparece em nenhum outro lugar do extrato.
+   Fora da venda fica só o que é dinheiro seu mudando de lugar. */
+var NAO_E_VENDA=/antecipa[çc][ãa]o de|saldo|resgate|transfer|dep[óo]sito (em dinheiro|em conta|de cheque)/i;
 function clientesPJ(){
   const g=Object.create(null);
   entradasPJ().forEach(l=>{
@@ -5184,7 +5189,7 @@ const ESTORNO_RE=/estorn|devolvid|devolu[çc][ãa]o|reembols|cancelad|chargeback
 const ehCartao=n=>/cart[ãa]o|credit ?card|fatura/i.test(instNome(n));
 const vendaValida=l=>RECEITA_CATS.indexOf(l.c)>=0&&instDono(l.i)==='pj'&&!l.nr
   &&!/rentabilidade|rendiment|\bcdi\b/i.test(String(l.n||''))  /* rendimento do saldo não é venda */
-  &&!ehCartao(l.i)&&!ADIANTAMENTO.test(String(l.n||''))&&!ESTORNO_RE.test(String(l.n||''));
+  &&!ehCartao(l.i)&&!NAO_E_VENDA.test(String(l.n||''))&&!ESTORNO_RE.test(String(l.n||''));
 function vendasPJ(){ return S.lanc.filter(vendaValida); }
 function produtoDe(v){
   const c=CENT(v);
