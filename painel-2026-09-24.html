@@ -5633,7 +5633,7 @@ function renderPainel(){
   const ganhoMed=med('ganhoPessoal'), cobre=lucroMed+ganhoMed;
   sem.push(tirouMed<=cobre
     ?['ok','Retiradas × lucro',`Você tirou ${brl0(tirouMed)}/mês; lucro ${brl0(lucroMed)}${ganhoMed?' + ganho pessoal '+brl0(ganhoMed):''}.`]
-    :['mau','Retiradas × lucro',`Você tira ${brl0(tirouMed)}/mês e a empresa lucra ${brl0(lucroMed)}${ganhoMed?' (+ '+brl0(ganhoMed)+' de ganho pessoal fora da Ruan Enjoy)':''}. Faltam ${brl0(tirouMed-cobre)} todo mês.`]);
+    :['mau','Retiradas × lucro',`Você tira ${brl0(tirouMed)}/mês e a empresa lucra ${brl0(lucroMed)}${ganhoMed?' (+ '+brl0(ganhoMed)+' de ganhos da Nesher Agência)':''}. Faltam ${brl0(tirouMed-cobre)} todo mês.`]);
   const pnpj=N.porMes.length?N.porMes[N.porMes.length-1].pessoalNaPJ:0;
   sem.push(pnpj<1?['ok','Gasto pessoal na PJ','Zero no último mês fechado.']
     :['mau','Gasto pessoal na PJ',`${brl0(pnpj)} no último mês fechado. Meta: zero.`]);
@@ -5730,7 +5730,7 @@ function renderPainel(){
       <div class="kpi"><div class="l">Você tirou · média</div><div class="v" style="color:${tirouMed>lucroMed+med('ganhoPessoal')?'var(--brasa)':'var(--salvia)'}">${brl0(tirouMed)}</div><div class="f">Pix + gastos pessoais na PJ</div></div>
       <div class="kpi"><div class="l">Seu custo de vida</div><div class="v">${brl0(vidaMed)}</div><div class="f">média, sem a caução</div></div>
       <div class="kpi"><div class="l">Pró-labore ${proOk?'fixo':'sustentável'}</div><div class="v">${brl0(proBase)}</div><div class="f">${proOk?'confirmado':'50% das vendas, limitado ao pior mês'}</div></div>
-      <div class="kpi"><div class="l">Ganho pessoal fora da Ruan Enjoy</div><div class="v">${brl0(N.porMes.reduce((a,x)=>a+x.ganhoPessoal,0))}</div><div class="f">entradas de sócios (Nesher Agência) no período</div></div>
+      <div class="kpi"><div class="l">Ganhos Nesher Agência (software)</div><div class="v">${brl0(N.porMes.reduce((a,x)=>a+x.ganhoPessoal,0))}</div><div class="f">ecossistema: entrada de sócios pagando o software</div></div>
     </div>
   </div>
 
