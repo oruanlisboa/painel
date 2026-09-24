@@ -901,7 +901,7 @@ tr.ehpj td:first-child{box-shadow:inset 2px 0 0 var(--pj)}
 
       <div class="card">
         <h2>NEC por subcategoria</h2><p class="sub">É aqui que o teto estoura. Orçado contra realizado, item por item.</p>
-        <div class="rolar"><table><thead><tr><th>Subcategoria</th><th class="r">Orçado</th><th class="r">Realizado</th><th class="r">Saldo</th></tr></thead><tbody id="v-nec"></tbody></table></div>
+        <div class="rolar"><table><thead><tr><th>Subcategoria</th><th class="r">Orçado</th><th class="r">Realizado</th><th class="r" title="média dos 6 meses anteriores com lançamento">Média 6m</th><th class="r">Saldo</th></tr></thead><tbody id="v-nec"></tbody></table></div>
       </div>
     </div>
 
@@ -1243,6 +1243,7 @@ tr.ehpj td:first-child{box-shadow:inset 2px 0 0 var(--pj)}
         <div class="inline">
           <button class="btn sm p" id="bk-arquivo">Ligar backup em arquivo</button>
           <button class="btn sm" id="bk-baixar">Baixar agora</button>
+          <button class="btn sm" data-bk="ics" title="evento diário no calendário, uma hora antes do horário de dormir">Lembrete diário no calendário</button>
         </div>
         <div id="bk-snaps" style="margin-top:16px"></div>
       </div>
@@ -2300,13 +2301,81 @@ async function inflar(bytes){
   }
   return null;
 }
+function lerCMap(d){
+  const mapa={};
+  (d.match(/beginbfrange([\s\S]*?)endbfrange/g)||[]).forEach(bloco=>{
+    let m,re_=/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>\s*(?:\[([\s\S]*?)\]|<([0-9A-Fa-f]+)>)/g;
+    while((m=re_.exec(bloco))){
+      const lo=parseInt(m[1],16), hi=parseInt(m[2],16);
+      if(m[3]!==undefined)(m[3].match(/<([0-9A-Fa-f]+)>/g)||[]).forEach((h,k)=>
+        mapa[lo+k]=hexTexto(h.replace(/[<>]/g,'')));
+      else{const base=parseInt(m[4],16); for(let c=lo;c<=hi&&c-lo<5000;c++)mapa[c]=String.fromCodePoint(base+c-lo);}
+    }
+  });
+  (d.match(/beginbfchar([\s\S]*?)endbfchar/g)||[]).forEach(bloco=>{
+    let m,re_=/<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g;
+    while((m=re_.exec(bloco)))mapa[parseInt(m[1],16)]=hexTexto(m[2]);
+  });
+  const um=/begincodespacerange\s*<([0-9A-Fa-f]{2})>/.test(d);
+  return {mapa,bytes:um?1:2};
+}
+/* destino do ToUnicode vem em UTF-16: <0041> é "A", <00660069> é "fi" */
+function hexTexto(h){let t='';for(let i=0;i+4<=h.length;i+=4)t+=String.fromCharCode(parseInt(h.substr(i,4),16));return t;}
+function textoPorFonte(cru,porObj){
+  try{
+    const dic={};
+    let m,re_=/(\d+)\s+\d+\s+obj\s*([\s\S]*?)(?:\bstream\b|\bendobj\b)/g;
+    while((m=re_.exec(cru)))dic[m[1]]=m[2];
+    const cmaps={};
+    const fonteDe=ref=>{
+      if(cmaps[ref]!==undefined)return cmaps[ref];
+      const d=dic[ref]||'', t=d.match(/\/ToUnicode\s+(\d+)\s+\d+\s+R/);
+      return cmaps[ref]=(t&&porObj[t[1]])?lerCMap(porObj[t[1]]):null;
+    };
+    const paginas=Object.keys(dic).filter(k=>/\/Type\s*\/Page\b/.test(dic[k])).sort((a,b)=>{
+      /* ordem das páginas: a de /Kids, quando existe */
+      const kids=(Object.values(dic).find(d=>/\/Type\s*\/Pages\b/.test(d))||'').match(/\/Kids\s*\[([^\]]*)\]/);
+      const ord=kids?kids[1].match(/\d+(?=\s+\d+\s+R)/g)||[]:[];
+      return (ord.indexOf(a)+1||1e6+ +a)-(ord.indexOf(b)+1||1e6+ +b);});
+    if(!paginas.length)return '';
+    const out=[];
+    paginas.forEach(pg=>{
+      const d=dic[pg];
+      let res=d.match(/\/Resources\s+(\d+)\s+\d+\s+R/); res=res?(dic[res[1]]||''):d;
+      let fd=res.match(/\/Font\s*<<([\s\S]*?)>>/); if(!fd){const r=res.match(/\/Font\s+(\d+)\s+\d+\s+R/); fd=r?[0,dic[r[1]]||'']:[0,''];}
+      const fontes={}; let f,rf=/\/([^\s\/<>\[\]()]+)\s+(\d+)\s+\d+\s+R/g;
+      while((f=rf.exec(fd[1])))fontes[f[1]]=fonteDe(f[2]);
+      const cont=d.match(/\/Contents\s*(?:\[([^\]]*)\]|(\d+)\s+\d+\s+R)/);
+      const refs=cont?(cont[1]?cont[1].match(/\d+(?=\s+\d+\s+R)/g)||[]:[cont[2]]):[];
+      refs.forEach(r=>{
+        const c=porObj[r]; if(!c)return;
+        let atual=null, t, rt=/\/([^\s\/<>\[\]()]+)\s+[\d.]+\s+Tf|<([0-9A-Fa-f\s]+)>|\(((?:\\.|[^()\\])*)\)/g;
+        while((t=rt.exec(c))){
+          if(t[1]!==undefined){atual=fontes[t[1]]||null;continue;}
+          if(t[2]!==undefined){
+            const h=t[2].replace(/\s/g,''), w=atual?atual.bytes*2:4; let s2='';
+            for(let i=0;i+w<=h.length;i+=w){const cod=parseInt(h.substr(i,w),16);
+              s2+=atual?(atual.mapa[cod]!=null?atual.mapa[cod]:''):String.fromCharCode(cod);}
+            out.push(s2);
+          }else{
+            let s2=t[3].replace(/\\([()\\])/g,'$1').replace(/\\(\d{1,3})/g,(x,o)=>String.fromCharCode(parseInt(o,8)));
+            if(atual&&atual.bytes===1)s2=[...s2].map(ch=>atual.mapa[ch.charCodeAt(0)]!=null?atual.mapa[ch.charCodeAt(0)]:ch).join('');
+            out.push(s2);
+          }
+        }
+      });
+    });
+    return out.join('');
+  }catch(e){return '';}
+}
 async function textoDoPDF(u8){
   const lat=s=>{let o='';for(let i=0;i<s.length;i++)o+=String.fromCharCode(s[i]);return o;};
   /* acha cada "stream ... endstream" pelos bytes, não pelo texto */
   const marca=[115,116,114,101,97,109];               // "stream"
   const fim  =[101,110,100,115,116,114,101,97,109];   // "endstream"
   const casa=(pos,alvo)=>alvo.every((b,k)=>u8[pos+k]===b);
-  const fluxos=[];
+  const fluxos=[], porObj={};
+  const cru=lat(u8);
   for(let i=0;i<u8.length-9;i++){
     if(!casa(i,marca))continue;
     let p=i+6; if(u8[p]===13)p++; if(u8[p]===10)p++;
@@ -2316,9 +2385,18 @@ async function textoDoPDF(u8){
     let corte=j; while(corte>p&&(u8[corte-1]===10||u8[corte-1]===13))corte--;
     const bruto=u8.subarray(p,corte);
     const dados=await inflar(bruto);
-    if(dados)fluxos.push(lat(dados));
+    if(dados){
+      const txt=lat(dados); fluxos.push(txt);
+      /* de qual objeto é este fluxo: o "N 0 obj" mais próximo antes dele */
+      const antes=cru.slice(Math.max(0,i-800),i), mo=antes.match(/(\d+)\s+\d+\s+obj(?![\s\S]*\sobj)/);
+      if(mo)porObj[mo[1]]=txt;
+    }
     i=j+8;
   }
+  /* cada fonte com o seu próprio mapa: juntar os mapas de duas fontes num só
+     troca letras (o extrato da Conta Simples usa Roboto Regular e Medium) */
+  const porFonte=textoPorFonte(cru,porObj);
+  if(porFonte&&porFonte.length>50)return porFonte;
   /* mapa glifo -> letra, quando a fonte veio embutida com codificação própria */
   const mapa={};
   fluxos.forEach(d=>{
@@ -2361,11 +2439,29 @@ async function textoDoPDF(u8){
 function lancamentosDoPDF(txt){
   /* ano de referência: a data completa que aparece no cabeçalho da fatura */
   const completas=txt.match(/\d{2}\/\d{2}\/\d{4}/g)||[];
-  let ano=new Date().getFullYear(), mesRef=new Date().getMonth()+1;
+  let ano=new Date().getFullYear(), mesRef=new Date().getMonth()+1, m;
   if(completas.length){const p=completas[0].split('/');mesRef=+p[1];ano=+p[2];}
   const out=[];
+  /* extrato com colunas crédito · débito · saldo (Conta Simples e parecidos):
+     o histórico quebra em várias linhas e o rodapé da página cai no meio */
+  const limpo=txt.replace(/Os dados acima t[êe]m como base[\s\S]*$/,'')
+    .replace(/Extrato emitido pela[\s\S]*?P[áa]gina\s*\d+?(?=\d{2}\/\d{2}\/\d{4}|\D|$)/g,' ');
+  /* data · histórico · crédito · débito · saldo · e o resto do histórico, quando a
+     página virou no meio do nome e ele continuou depois dos valores */
+  const reCDS=/(\d{2}\/\d{2}\/\d{4})((?:(?!\d{2}\/\d{2}\/\d{4})[\s\S])*?)-?R\$\s?([\d.]+,\d{2})\s*-?R\$\s?([\d.]+,\d{2})\s*-?R\$\s?[\d.]+,\d{2}((?:(?!\d{2}\/\d{2}\/\d{4})[\s\S])*)/g;
+  while((m=reCDS.exec(limpo))){
+    const cr=numBR(m[3]), db=numBR(m[4]);
+    const o=(m[2]+' '+(m[5]||'')).replace(/\s+/g,' ').trim();
+    if(!cr&&!db)continue;
+    /* o nome é quem recebeu ou quem mandou; "PIX Enviado para" fica no texto original */
+    const n=o.replace(/^PIX Enviado para\s+|^Recebimento via PIX de\s+|^Pix (enviado|recebido)( para| de)?\s+/i,'')
+      .replace(/^[\d.\s]{6,}(?=[A-Za-zÀ-ÿ])/,'').trim()||o;
+    out.push({d:dataBR(m[1]),n:n.slice(0,70),o,v:cr?cr:-db});
+  }
+  if(out.length>=3)return out.filter(x=>x.d&&x.v);
+  out.length=0;
   /* primeiro tenta datas completas (extrato) */
-  let m,re1=/(\d{2}\/\d{2}\/\d{4})\s*([^\n]{3,60}?)\s*R?\$?\s*(-?[\d.]+,\d{2})/g;
+  let re1=/(\d{2}\/\d{2}\/\d{4})\s*([^\n]{3,60}?)\s*R?\$?\s*(-?[\d.]+,\d{2})/g;
   while((m=re1.exec(txt)))out.push({d:dataBR(m[1]),n:m[2].trim().slice(0,70),v:-Math.abs(numBR(m[3]))});
   if(out.length>=3)return out.filter(x=>x.d&&x.v);
   /* senão, formato de fatura: dia/mês + estabelecimento + valor */
@@ -2394,8 +2490,12 @@ function textoParecePortugues(linhas){
 async function lerPDF(file){
   const txt=await textoDoPDF(new Uint8Array(await file.arrayBuffer()));
   if(!txt||txt.length<50)return {fonte:'PDF',linhas:[]};
-  const linhas=lancamentosDoPDF(txt).map(x=>({...x,tipo:'mov'}));
-  return {fonte:/fatura/i.test(txt)?'Fatura de cartão (PDF)':'Extrato em PDF',
+  const linhas=lancamentosDoPDF(txt).map(x=>({...x,tipo:x.v>0?'receita':'mov'}));
+  /* de qual conta é: pelo número da conta, se ele já estiver no nome de alguma instituição */
+  const num=(txt.match(/Conta\s*(?:n[úu]mero|n[º°o]\.?)\s*:?\s*(\d{5,})/i)||[])[1];
+  const jaTem=num&&nomesInst().find(i=>i.includes(num));
+  const banco=/conta simples/i.test(txt)?'ContaSimples':'';
+  return {fonte:jaTem||(banco?banco+(num?' '+num:''):'')||(/fatura/i.test(txt)?'Fatura de cartão (PDF)':'Extrato em PDF'),
           linhas, suspeito:linhas.length&&!textoParecePortugues(linhas)};
 }
 
@@ -2696,7 +2796,8 @@ function montarPrevia(txt,prontas){
     return {d:x.d,h:x.h||'',o:x.o||'',n:x.n,v,ent,transf,est,c,s:sub,i:inst,auto:!!r||!!porOp,pj:!!x.pj,
       p:dono, dir:x.v>0?1:-1, cruzada:!!cruzada, t:'',
       op:op?op.rot:'', opId:op?op.id:'',
-      dup:S.lanc.some(l=>Math.abs(l.v-v)<0.01&&(
+      /* só é repetido se for da mesma conta: duas contas podem ter a mesma compra de R$ 6,90 no mesmo dia */
+      dup:S.lanc.some(l=>(!l.i||!inst||l.i===inst)&&Math.abs(l.v-v)<0.01&&(
             (l.d===x.d&&norm(l.n).slice(0,12)===norm(x.n).slice(0,12)) ||
             (l.d.slice(0,7)===x.d.slice(0,7)&&norm(l.n).length>3&&norm(x.n).includes(norm(l.n).slice(0,8)))
           ))};
@@ -3328,6 +3429,19 @@ function renderRoda(){
       </li>`).join('')}</ul>`;
   $$('#roda .fatia').forEach(c=>c.classList.toggle('foco',+c.dataset.i===rodaFoco));
 }
+/* mesma régua do pote, uma subcategoria por vez: é onde se vê o que subiu */
+function mediaSub(p,sub,n){
+  n=n||6; let t=0,c=0;
+  for(let k=1;k<=n;k++){const m=mesMais(S.mes,-k);if(doMes(m).length){t+=realSub(p,sub,m);c++;}}
+  return c?t/c:0;
+}
+/* realizado contra a média: seta e cor. Gasto acima da média é ruim; reserva acima é bom */
+function versusMedia(r,md,acumula){
+  if(!md)return '<span style="color:var(--sup2)">—</span>';
+  const sobe=r>md*1.05, desce=r<md*0.95, pct=Math.round((r/md-1)*100);
+  const cor=sobe?(acumula?'var(--salvia)':'var(--brasa)'):desce?(acumula?'var(--brasa)':'var(--salvia)'):'var(--fosco)';
+  return `${brl0(md)} <span style="color:${cor};font-size:11px">${sobe?'▲':desce?'▼':'='}${sobe||desce?' '+(pct>0?'+':'')+pct+'%':''}</span>`;
+}
 function mediaPote(p,n){
   n=n||6; let t=0,c=0;
   for(let k=1;k<=n;k++){const m=mesMais(S.mes,-k);if(doMes(m).length){t+=realPote(p,m);c++;}}
@@ -3518,11 +3632,40 @@ function renderBackup(){
       :'<p class="sub" style="margin:0">Ainda não há cópias — a primeira é guardada na próxima alteração.</p>';
   });
 }
+/* lembrete diário: um app sem servidor não consegue notificar sozinho,
+   mas o calendário do celular consegue — e ele já está no bolso */
+function baixarLembrete(){
+  const [hh,mm]=String(S.cfg.dorme||'23:00').split(':').map(Number);
+  const h=((hh||23)+23)%24, hora=String(h).padStart(2,'0')+String(mm||0).padStart(2,'0')+'00';
+  const amanha=new Date(Date.now()+864e5), ymd=amanha.toISOString().slice(0,10).replace(/-/g,'');
+  const link=/^https?:/.test(location.href)?location.href.split(/[?#]/)[0]:'https://oruanlisboa.github.io/painel/';
+  const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Painel de Vida//PT-BR','CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT','UID:painel-de-vida-lembrete-diario','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z',
+    'DTSTART:'+ymd+'T'+hora,'DURATION:PT10M','RRULE:FREQ=DAILY',
+    'SUMMARY:Lançar o dia no Painel',
+    'DESCRIPTION:Dois minutos: lance o que gastou hoje ou importe o extrato. '+link,
+    'URL:'+link,
+    'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Lançar o dia no Painel','TRIGGER:PT0M','END:VALARM',
+    'END:VEVENT','END:VCALENDAR'].join('\r\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
+  a.download='lembrete-painel.ics'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  aviso('abra o arquivo baixado para pôr o lembrete no calendário');
+}
+/* quanto tempo sem lançar nada: é assim que o painel morre, não por falta de recurso */
+const ultimoLanc=()=>S.lanc.reduce((a,l)=>l.d>a?l.d:a,'');
 function renderAvisoBackup(){
   const el=$('#aviso-backup'); if(!el)return;
   const d=diasSemBackup();
-  if(Arquivo.ligado()||d<=7){el.innerHTML='';return;}
-  el.innerHTML=`<div class="alerta aviso" style="margin-bottom:14px">
+  const ul=ultimoLanc(), semLanc=ul?Math.floor((new Date(HOJE+'T00:00:00')-new Date(ul+'T00:00:00'))/864e5):999;
+  const lanc=semLanc>=3?`<div class="alerta aviso" style="margin-bottom:14px">
+    ${ul?`<b>Nada lançado há ${semLanc} dias</b> — o último foi em ${ul.split('-').reverse().join('/')}.`:'<b>Nenhum lançamento ainda.</b>'}
+    Enquanto isso, o "posso gastar" e a projeção do mês estão chutando. Importe o extrato dos bancos
+    (Dinheiro → Lançar → Importar) ou lance o que lembrar.
+    <div class="inline"><button class="btn sm" data-bk="ics">Lembrete diário no calendário</button></div></div>`:'';
+  if(Arquivo.ligado()||d<=7){el.innerHTML=lanc;return;}
+  el.innerHTML=lanc+`<div class="alerta aviso" style="margin-bottom:14px">
     ${d>900?'<b>Nenhum backup ainda.</b>':`<b>Último backup há ${d} dias.</b>`}
     O painel vive dentro deste navegador. Se ele for limpo, some tudo.
     <div class="inline"><button class="btn sm p" data-bk="baixar">Baixar backup agora</button>
@@ -3657,9 +3800,11 @@ function renderVisao(){
       return `<tr><td>${esc(s.nome)}</td>
         <td class="r"><input class="mini n" value="${s.plan}" data-sub="${i}" style="width:80px"></td>
         <td class="r num" style="color:${r>(+s.plan||0)?'var(--brasa)':'var(--areia2)'}">${brl0(r)}</td>
+        <td class="r num" style="color:var(--fosco);white-space:nowrap">${versusMedia(r,mediaSub(nec,s.nome))}</td>
         <td class="r num" style="color:${d<0?'var(--brasa)':'var(--salvia)'}">${brl0(d)}</td></tr>`;}).join('')+
       `<tr style="border-top:1px solid var(--linha)"><td><b>Total</b></td><td class="r num"><b>${brl0(orcPote(nec))}</b></td>
        <td class="r num"><b style="color:var(--brasa)">${brl0(realPote(nec))}</b></td>
+       <td class="r num" style="color:var(--fosco);white-space:nowrap">${versusMedia(realPote(nec),mediaPote(nec))}</td>
        <td class="r num" style="color:var(--fosco)">teto ${brl0(teto)}</td></tr>`;}
 }
 
@@ -5029,6 +5174,7 @@ const ESTORNO_RE=/estorn|devolvid|devolu[çc][ãa]o|reembols|cancelad|chargeback
    contar como faturamento infla a meta e o imposto calculado por cima dela */
 const ehCartao=n=>/cart[ãa]o|credit ?card|fatura/i.test(instNome(n));
 const vendaValida=l=>RECEITA_CATS.indexOf(l.c)>=0&&instDono(l.i)==='pj'&&!l.nr
+  &&!/rentabilidade|rendiment|\bcdi\b/i.test(String(l.n||''))  /* rendimento do saldo não é venda */
   &&!ehCartao(l.i)&&!ADIANTAMENTO.test(String(l.n||''))&&!ESTORNO_RE.test(String(l.n||''));
 function vendasPJ(){ return S.lanc.filter(vendaValida); }
 function produtoDe(v){
@@ -5684,6 +5830,7 @@ function ligar(){
   };
   $('#aviso-backup').onclick=async e=>{
     const b=e.target.closest('[data-bk]'); if(!b)return;
+    if(b.dataset.bk==='ics'){baixarLembrete();return;}
     if(b.dataset.bk==='baixar'){baixarJSON();salvar();renderHoje();aviso('backup baixado');}
     else{try{await Arquivo.escolher();salvar();renderHoje();aviso('backup em arquivo ligado');}catch(err){}}
   };
@@ -5772,6 +5919,7 @@ function ligar(){
     if(d.rgdel!=null){S.regras.splice(+d.rgdel,1);salvar();renderRegras();return;}
     /* backup */
     if(b.id==='bk-baixar'){baixarJSON();salvar();renderBackup();renderHoje();return;}
+    if(d.bk==='ics'){baixarLembrete();return;}
     if(b.id==='bk-arquivo'){try{await Arquivo.escolher();salvar();renderBackup();renderHoje();
       aviso('backup em arquivo ligado');}catch(err){}return;}
     if(d.snap){
