@@ -901,7 +901,7 @@ tr.ehpj td:first-child{box-shadow:inset 2px 0 0 var(--pj)}
 
       <div class="card">
         <h2>NEC por subcategoria</h2><p class="sub">É aqui que o teto estoura. Orçado contra realizado, item por item.</p>
-        <div class="rolar"><table><thead><tr><th>Subcategoria</th><th class="r">Orçado</th><th class="r">Realizado</th><th class="r" title="média dos 6 meses anteriores com lançamento">Média 6m</th><th class="r">Saldo</th></tr></thead><tbody id="v-nec"></tbody></table></div>
+        <div class="rolar"><table><thead><tr><th>Subcategoria</th><th class="r">Orçado</th><th class="r">Realizado</th><th class="r" id="v-nec-med" title="média dos meses fechados usados na comparação">Média</th><th class="r">Saldo</th></tr></thead><tbody id="v-nec"></tbody></table></div>
       </div>
     </div>
 
@@ -3430,10 +3430,18 @@ function renderRoda(){
   $$('#roda .fatia').forEach(c=>c.classList.toggle('foco',+c.dataset.i===rodaFoco));
 }
 /* mesma régua do pote, uma subcategoria por vez: é onde se vê o que subiu */
+/* meses de comparação: até 6 meses fechados com lançamento, sem o mês em foco.
+   Com pouco histórico, os meses depois do foco também valem — senão o primeiro mês
+   importado fica sempre sem média */
+function mesesComparacao(n){
+  n=n||6; const atual=HOJE.slice(0,7);
+  const todos=[...new Set(S.lanc.map(l=>l.d.slice(0,7)))].filter(m=>m!==S.mes&&m<atual).sort();
+  const antes=todos.filter(m=>m<S.mes).slice(-n);
+  return antes.length?antes:todos.slice(0,n);
+}
 function mediaSub(p,sub,n){
-  n=n||6; let t=0,c=0;
-  for(let k=1;k<=n;k++){const m=mesMais(S.mes,-k);if(doMes(m).length){t+=realSub(p,sub,m);c++;}}
-  return c?t/c:0;
+  const ms=mesesComparacao(n);
+  return ms.length?ms.reduce((a,m)=>a+realSub(p,sub,m),0)/ms.length:0;
 }
 /* realizado contra a média: seta e cor. Gasto acima da média é ruim; reserva acima é bom */
 function versusMedia(r,md,acumula){
@@ -3443,9 +3451,8 @@ function versusMedia(r,md,acumula){
   return `${brl0(md)} <span style="color:${cor};font-size:11px">${sobe?'▲':desce?'▼':'='}${sobe||desce?' '+(pct>0?'+':'')+pct+'%':''}</span>`;
 }
 function mediaPote(p,n){
-  n=n||6; let t=0,c=0;
-  for(let k=1;k<=n;k++){const m=mesMais(S.mes,-k);if(doMes(m).length){t+=realPote(p,m);c++;}}
-  return c?t/c:0;
+  const ms=mesesComparacao(n);
+  return ms.length?ms.reduce((a,m)=>a+realPote(p,m),0)/ms.length:0;
 }
 const acumuladoPote=pid=>{const p=pote(pid);if(!p)return 0;
   return S.lanc.filter(l=>l.c===p.nome||l.c===curto(p)).reduce((a,l)=>a+l.v,0);};
@@ -3791,11 +3798,13 @@ function renderVisao(){
           ${(()=>{const md=mediaPote(p);if(!md)return '';
             const seta=rl>md*1.05?'▲':rl<md*0.95?'▼':'=';
             const cm=rl>md*1.05?(p.tipo==='acumula'?'var(--salvia)':'var(--brasa)'):rl<md*0.95?(p.tipo==='acumula'?'var(--brasa)':'var(--salvia)'):'var(--fosco)';
-            return `<br><span style="font-size:11px;color:var(--fosco)">média 6m ${brl0(md)} <span style="color:${cm}">${seta}</span></span>`;})()}
+            return `<br><span style="font-size:11px;color:var(--fosco)">média ${brl0(md)} <span style="color:${cm}">${seta}</span></span>`;})()}
           ${orc&&orc!==al?`<br><span style="color:var(--fosco);font-size:11px">orçado ${brl0(orc)}</span>`:''}
         </span></span></li>`;}).join('');
 
   if(nec){const teto=alocado(nec);
+    {const ms=mesesComparacao(), h=$('#v-nec-med');
+      if(h){h.textContent=ms.length?'Média '+ms.map(m=>MESES_TXT[+m.slice(5)-1]).join('·'):'Média';}}
     $('#v-nec').innerHTML=nec.subs.map((s,i)=>{const r=realSub(nec,s.nome),d=(+s.plan||0)-r;
       return `<tr><td>${esc(s.nome)}</td>
         <td class="r"><input class="mini n" value="${s.plan}" data-sub="${i}" style="width:80px"></td>

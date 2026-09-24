@@ -1,7 +1,7 @@
 /* Painel de Vida — service worker.
    Guarda o painel para ele abrir sem internet. Os dados nunca passam por aqui:
    ficam no armazenamento do navegador e no backup em arquivo. */
-const CACHE = 'painel-v18';
+const CACHE = 'painel-v19';
 const ARQUIVOS = [
   './',
   './painel-2026-09-24.html',
